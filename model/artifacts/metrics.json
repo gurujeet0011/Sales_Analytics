@@ -1,0 +1,25 @@
+{
+  "order_models": {
+    "Sales": {
+      "mae": 165.55,
+      "r2": 0.2155,
+      "r2_log_space": 0.5752,
+      "n_train": 7996,
+      "n_test": 1999,
+      "transform": "log1p"
+    },
+    "Profit": {
+      "mae": 49.36,
+      "r2": 0.1524,
+      "r2_transform_space": 0.6754,
+      "n_train": 7996,
+      "n_test": 1999,
+      "transform": "signed_log1p"
+    }
+  },
+  "forecast_model": {
+    "r2": 0.8886,
+    "resid_std": 8322.52,
+    "months_trained": 48
+  }
+}
