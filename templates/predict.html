@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Predict Order{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Predict Sales &amp; Profit</h1>
+  <p class="page-sub">Random Forest regression models trained on the cleaned Superstore dataset</p>
+</div>
+
+<div class="grid g2 align-start">
+  <div class="panel">
+    <h3>Order Details</h3>
+    <form method="POST" class="predict-form">
+      <div class="form-row">
+        <label>Category</label>
+        <select name="category" id="categorySelect">
+          {% for c in options.categories %}
+          <option value="{{ c }}" {{ 'selected' if c == form_values.category else '' }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Sub-Category</label>
+        <select name="sub_category" id="subCategorySelect">
+          {% for sc in options.sub_categories_by_category[form_values.category] %}
+          <option value="{{ sc }}" {{ 'selected' if sc == form_values.sub_category else '' }}>{{ sc }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Region</label>
+        <select name="region">
+          {% for r in options.regions %}
+          <option value="{{ r }}" {{ 'selected' if r == form_values.region else '' }}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Customer Segment</label>
+        <select name="segment">
+          {% for s in options.segments %}
+          <option value="{{ s }}" {{ 'selected' if s == form_values.segment else '' }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Ship Mode</label>
+        <select name="ship_mode">
+          {% for sm in options.ship_modes %}
+          <option value="{{ sm }}" {{ 'selected' if sm == form_values.ship_mode else '' }}>{{ sm }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Quantity</label>
+        <input type="number" name="quantity" min="1" max="20" value="{{ form_values.quantity }}">
+      </div>
+      <div class="form-row">
+        <label>Discount (0&ndash;0.8)</label>
+        <input type="number" name="discount" min="0" max="0.8" step="0.05" value="{{ form_values.discount }}">
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">Predict</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Prediction Result</h3>
+    {% if result %}
+    <div class="result-cards">
+      <div class="result-card">
+        <div class="result-val">${{ "{:,.2f}".format(result.predicted_sales) }}</div>
+        <div class="result-lbl">Predicted Sales</div>
+      </div>
+      <div class="result-card {{ 'negative' if result.predicted_profit < 0 else '' }}">
+        <div class="result-val">${{ "{:,.2f}".format(result.predicted_profit) }}</div>
+        <div class="result-lbl">Predicted Profit</div>
+      </div>
+      <div class="result-card">
+        <div class="result-val">{{ result.predicted_margin_pct }}%</div>
+        <div class="result-lbl">Predicted Margin</div>
+      </div>
+    </div>
+    <div class="result-summary">
+      For a {{ form_values.quantity }}-unit {{ form_values.category }} / {{ form_values.sub_category }} order,
+      shipped {{ form_values.ship_mode }} to the {{ form_values.region }} region for a {{ form_values.segment }}
+      customer at a {{ (form_values.discount * 100) | round(0) }}% discount, the model estimates
+      <strong>${{ "{:,.2f}".format(result.predicted_sales) }}</strong> in sales and
+      <strong>${{ "{:,.2f}".format(result.predicted_profit) }}</strong> in profit.
+    </div>
+    {% else %}
+    <div class="empty-state">Fill in the order details and click Predict to see the model's estimate.</div>
+    {% endif %}
+
+    <div class="model-notes">
+      <h4>Model transparency</h4>
+      <table class="mini-table">
+        <tr><th></th><th>MAE</th><th>R² (real scale)</th><th>Trained on</th></tr>
+        <tr><td>Sales model</td><td>${{ "{:,.2f}".format(metrics.Sales.mae) }}</td><td>{{ metrics.Sales.r2 }}</td><td>{{ "{:,}".format(metrics.Sales.n_train) }} orders</td></tr>
+        <tr><td>Profit model</td><td>${{ "{:,.2f}".format(metrics.Profit.mae) }}</td><td>{{ metrics.Profit.r2 }}</td><td>{{ "{:,}".format(metrics.Profit.n_train) }} orders</td></tr>
+      </table>
+      <p>These features (category, region, segment, ship mode, quantity, discount) explain only part of the variance in an individual order's Sales — the dataset has no per-product price or SKU identity, which is the single biggest real-world driver of order value. Treat predictions as directional estimates, not exact quotes. The <a href="{{ url_for('forecast_page') }}">monthly forecast model</a> is considerably more reliable (R² = {{ ((metrics.Sales.r2_log_space) if metrics.Sales.r2_log_space else '') }}{{ '' }}) since it predicts aggregate trend rather than single-order noise.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUBCATS = {{ options.sub_categories_by_category | tojson }};
+document.getElementById('categorySelect').addEventListener('change', function(){
+  const sel = document.getElementById('subCategorySelect');
+  sel.innerHTML = '';
+  SUBCATS[this.value].forEach(sc=>{
+    const opt = document.createElement('option');
+    opt.value = sc; opt.textContent = sc;
+    sel.appendChild(opt);
+  });
+});
+</script>
+{% endblock %}

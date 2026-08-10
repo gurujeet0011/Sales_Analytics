@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Sales Forecast{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Monthly Sales Forecast</h1>
+  <p class="page-sub">Linear trend + seasonal model, trained on {{ metrics.months_trained }} months of history · R² = {{ metrics.r2 }}</p>
+</div>
+
+<div class="panel">
+  <h3>Historical Sales + {{ n_months }}-Month Forecast</h3>
+  <div class="chart-wrap h340"><canvas id="chartForecast"></canvas></div>
+
+  <div class="forecast-controls">
+    <span>Forecast horizon:</span>
+    <a href="{{ url_for('forecast_page', months=3) }}" class="{{ 'active' if n_months==3 else '' }}">3 months</a>
+    <a href="{{ url_for('forecast_page', months=6) }}" class="{{ 'active' if n_months==6 else '' }}">6 months</a>
+    <a href="{{ url_for('forecast_page', months=12) }}" class="{{ 'active' if n_months==12 else '' }}">12 months</a>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:16px;">
+  <h3>Forecast Detail</h3>
+  <table class="data-table">
+    <thead><tr><th>Month</th><th>Predicted Sales</th><th>95% CI Lower</th><th>95% CI Upper</th></tr></thead>
+    <tbody>
+      {% for row in future %}
+      <tr>
+        <td>{{ row.date }}</td>
+        <td>${{ "{:,.2f}".format(row.predicted_sales) }}</td>
+        <td>${{ "{:,.2f}".format(row.lower_ci) }}</td>
+        <td>${{ "{:,.2f}".format(row.upper_ci) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+const HISTORY = {{ history | tojson }};
+const FUTURE = {{ future | tojson }};
+const NAVY='#0F2A4A', ORANGE='#FF6B35';
+Chart.defaults.font.family="'Segoe UI', system-ui, Arial, sans-serif";
+Chart.defaults.color = '#5B6B7C';
+
+const histLabels = HISTORY.map(h=>h.date);
+const futLabels = FUTURE.map(f=>f.date);
+const allLabels = [...histLabels, ...futLabels];
+
+const histSeries = [...HISTORY.map(h=>h.sales), ...Array(futLabels.length).fill(null)];
+const bridgeSales = [...Array(histLabels.length-1).fill(null), HISTORY[HISTORY.length-1].sales, ...FUTURE.map(f=>f.predicted_sales)];
+const bridgeLower = [...Array(histLabels.length-1).fill(null), HISTORY[HISTORY.length-1].sales, ...FUTURE.map(f=>f.lower_ci)];
+const bridgeUpper = [...Array(histLabels.length-1).fill(null), HISTORY[HISTORY.length-1].sales, ...FUTURE.map(f=>f.upper_ci)];
+
+new Chart(document.getElementById('chartForecast'), {
+  type:'line',
+  data:{
+    labels: allLabels,
+    datasets:[
+      { label:'Upper CI', data:bridgeUpper, borderColor:'transparent', backgroundColor:'rgba(255,107,53,0.10)', fill:'+1', pointRadius:0, order:3 },
+      { label:'Lower CI', data:bridgeLower, borderColor:'transparent', backgroundColor:'rgba(255,107,53,0.10)', fill:false, pointRadius:0, order:3 },
+      { label:'Historical', data: histSeries, borderColor: NAVY, backgroundColor:NAVY, tension:.25, pointRadius:2, order:1 },
+      { label:'Forecast', data: bridgeSales, borderColor: ORANGE, borderDash:[6,4], backgroundColor:ORANGE, tension:.25, pointRadius:3, order:2 },
+    ]
+  },
+  options:{
+    plugins:{ legend:{position:'bottom', labels:{filter: l => l.text==='Historical'||l.text==='Forecast'}} },
+    scales:{ y:{grid:{color:'#EEF1F4'}, title:{display:true, text:'Total Monthly Sales ($)'}}, x:{grid:{display:false}, ticks:{maxRotation:60, minRotation:60}} }
+  }
+});
+</script>
+{% endblock %}

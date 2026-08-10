@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Sales Overview</h1>
+  <p class="page-sub">Aggregated from {{ "{:,}".format(data.kpis.total_orders) }} orders across the full dataset</p>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">${{ "{:,.0f}".format(data.kpis.total_sales) }}</div><div class="lbl">Total Sales</div></div>
+  <div class="kpi"><div class="val">${{ "{:,.0f}".format(data.kpis.total_profit) }}</div><div class="lbl">Total Profit</div></div>
+  <div class="kpi"><div class="val">{{ "{:,}".format(data.kpis.total_orders) }}</div><div class="lbl">Orders</div></div>
+  <div class="kpi"><div class="val">${{ "{:,.0f}".format(data.kpis.avg_order_value) }}</div><div class="lbl">Avg Order Value</div></div>
+  <div class="kpi"><div class="val">{{ "{:,}".format(data.kpis.total_customers) }}</div><div class="lbl">Customers</div></div>
+</div>
+
+<div class="grid g2">
+  <div class="panel">
+    <h3>Sales by Category</h3>
+    <div class="chart-wrap h280"><canvas id="chartCategory"></canvas></div>
+  </div>
+  <div class="panel">
+    <h3>Sales by Region</h3>
+    <div class="chart-wrap h280"><canvas id="chartRegion"></canvas></div>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:16px;">
+  <div class="panel">
+    <h3>Profit by Category</h3>
+    <div class="chart-wrap h280"><canvas id="chartProfitCategory"></canvas></div>
+  </div>
+  <div class="panel">
+    <h3>Sales by Customer Segment</h3>
+    <div class="chart-wrap h280"><canvas id="chartSegment"></canvas></div>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:16px;">
+  <div class="panel">
+    <h3>Top 10 Customers by Sales</h3>
+    <div class="chart-wrap h320"><canvas id="chartTopCustomers"></canvas></div>
+  </div>
+  <div class="panel">
+    <h3>Top 10 Sub-Categories by Sales</h3>
+    <div class="chart-wrap h320"><canvas id="chartTopSubcat"></canvas></div>
+  </div>
+</div>
+
+<div class="cta-panel">
+  <div>
+    <h3>Want to predict a new order's Sales &amp; Profit?</h3>
+    <p>Use the trained ML model to estimate outcomes before an order is placed.</p>
+  </div>
+  <a href="{{ url_for('predict_page') }}" class="btn-primary">Go to Predictor →</a>
+</div>
+
+<script>
+const DATA = {{ data | tojson }};
+const NAVY='#0F2A4A', ORANGE='#FF6B35', TEAL='#2EC4B6', GOLD='#FFB400', RED='#C0392B';
+const PALETTE=[NAVY,ORANGE,TEAL,GOLD,RED,'#6C5CE7','#1E8449','#8395A7'];
+Chart.defaults.font.family="'Segoe UI', system-ui, Arial, sans-serif";
+Chart.defaults.color = '#5B6B7C';
+
+function barChart(id, labels, values, color, horizontal=false){
+  new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{ labels, datasets:[{ data: values, backgroundColor: color, borderRadius:4, maxBarThickness: horizontal?16:40 }]},
+    options:{ indexAxis: horizontal?'y':'x', plugins:{legend:{display:false}},
+      scales:{ x:{grid:{display: horizontal}}, y:{grid:{display: !horizontal}} } }
+  });
+}
+
+barChart('chartCategory', Object.keys(DATA.sales_by_category), Object.values(DATA.sales_by_category), ORANGE);
+barChart('chartProfitCategory', Object.keys(DATA.profit_by_category), Object.values(DATA.profit_by_category), TEAL);
+barChart('chartSegment', Object.keys(DATA.sales_by_segment), Object.values(DATA.sales_by_segment), GOLD);
+
+new Chart(document.getElementById('chartRegion'), {
+  type:'doughnut',
+  data:{ labels:Object.keys(DATA.sales_by_region), datasets:[{data:Object.values(DATA.sales_by_region), backgroundColor:PALETTE, borderWidth:2, borderColor:'#fff'}]},
+  options:{ cutout:'60%', plugins:{legend:{position:'bottom'}} }
+});
+
+barChart('chartTopCustomers', Object.keys(DATA.top_customers), Object.values(DATA.top_customers), NAVY, true);
+barChart('chartTopSubcat', Object.keys(DATA.top_subcategories), Object.values(DATA.top_subcategories), RED, true);
+</script>
+{% endblock %}

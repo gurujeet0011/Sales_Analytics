@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{% block title %}Sales Analytics{% endblock %} · Superstore</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">S</span>
+      <div>
+        <div class="brand-title">Superstore Sales Analytics</div>
+        <div class="brand-sub">Flask · Machine Learning · 2014&ndash;2017</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' else '' }}">Dashboard</a>
+      <a href="{{ url_for('predict_page') }}" class="{{ 'active' if request.path == '/predict' else '' }}">Predict Order</a>
+      <a href="{{ url_for('forecast_page') }}" class="{{ 'active' if request.path == '/forecast' else '' }}">Sales Forecast</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page-main">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  Built with Flask, scikit-learn &amp; Chart.js · Data: Superstore Sales dataset (clean_data.xlsx)
+</footer>
+</body>
+</html>
