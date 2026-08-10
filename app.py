@@ -22,7 +22,17 @@ from flask import Flask, jsonify, render_template, request
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ARTIFACT_DIR = os.path.join(BASE_DIR, "model", "artifacts")
 
-app = Flask(__name__)
+import os
+
+# Yeh aapke current folder (sales_app) ka sahi path nikalega
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+app = Flask(
+    __name__,
+    template_folder=os.path.join(base_dir, 'templates'),
+    static_folder=os.path.join(base_dir, 'static')
+)
+
 
 # ---------------------------------------------------------------
 # Load model artifacts once at startup
